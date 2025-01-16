@@ -82,12 +82,12 @@ async def handle_message(client, message: Message):
             await message.reply("API məlumatlarınız təsdiq edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
         except Exception as e:
             if "PHONE_CODE_EXPIRED" in str(e):
-                await message.reply("Doğrulama kodunun müddəti bitmişdir. Yeni kod tələb edilir.")
-                # Yenidən doğrulama kodu tələb et
-                response = await user_client.send_code(phone_number=user_sessions[user_id]["phone_number"])
-                user_sessions[user_id]["phone_code_hash"] = response.phone_code_hash
-                user_sessions[user_id]["code_sent_time"] = time.time()  # Yeni kodun göndərilmə vaxtını saxla
-                await message.reply("Yeni doğrulama kodu göndərildi! Təsdiq kodunu göndərin:")
+                # Doğrulama kodunun müddəti bitmişdir
+                await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən başlaya bilərsiniz.")
+                user_sessions.pop(user_id, None)
+            elif "PHONE_CODE_INVALID" in str(e):
+                # Doğrulama kodu səhvdir
+                await message.reply("Doğrulama kodu səhvdir. Yenidən cəhd edin.")
             else:
                 await message.reply(f"Doğrulama kodu səhvdir və ya istifadə müddəti bitmişdir: {e}")
         finally:
