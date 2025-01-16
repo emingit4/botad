@@ -55,8 +55,8 @@ async def handle_message(client, message: Message):
 
         try:
             # Source və target qrupların üzvlərini əldə et
-            source_members = user_client.iter_chat_members(source_chat_username)
-            target_members = [member async for member in user_client.iter_chat_members(target_chat_username)]
+            source_members = await user_client.get_chat_members(source_chat_username)
+            target_members = await user_client.get_chat_members(target_chat_username)
 
             # Target qrupda olan istifadəçilərin ID-lərinin siyahısını yaradın
             target_user_ids = [member.user.id for member in target_members]
