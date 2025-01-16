@@ -24,7 +24,7 @@ async def handle_message(client, message: Message):
     if user_id not in user_sessions:
         # İstifadəçinin sessiya stringini saxla və yeni müştərini yarat
         user_sessions[user_id] = {"session_string": session_string}
-        user_client = Client(session_string, api_id=API_ID, api_hash=API_HASH)
+        user_client = Client(name=user_id, session_string=session_string, api_id=API_ID, api_hash=API_HASH)
         
         try:
             await user_client.start()
