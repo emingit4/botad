@@ -1,6 +1,5 @@
-from pyrogram import Client, filters  # StringSession artıq lazım deyil
+from pyrogram import Client, filters
 from pyrogram.types import Message
-
 
 # Bot konfiqurasiyası
 bot_token = "7631661650:AAGE9KqXFZ8WDyEJncr8J14FALQtiwanzDk"
@@ -38,27 +37,28 @@ async def handle_message(client, message: Message):
             await message.reply("Sessiya qəbul edildi və hesaba giriş edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
         except Exception as e:
             await message.reply(f"Hesaba giriş uğursuz oldu: {e}")
-    elif "client" in user_sessions[user_id]:
-        user_client = user_sessions[user_id]["client"]
-        args = message.text.split()
-
-        if len(args) != 2:
-            await message.reply("Zəhmət olmasa, qrupların ID-lərini düzgün formatda göndərin:\nFormat: <source_chat_id> <target_chat_id>")
-            return
-
-        source_chat_id = int(args[0])
-        target_chat_id = int(args[1])
-
-        try:
-            async for member in user_client.get_chat_members(source_chat_id):
-                try:
-                    await user_client.add_chat_members(target_chat_id, member.user.id)
-                    await message.reply(f"İstifadəçi {member.user.id} uğurla köçürüldü!")
-                except Exception as e:
-                    await message.reply(f"İstifadəçi {member.user.id} köçürülə bilmədi: {e}")
-        except Exception as e:
-            await message.reply(f"Qrup üzvlərini əldə etmək mümkün olmadı: {e}")
     else:
-        await message.reply("Sessiya stringi qəbul edildikdən sonra davam edin.")
+        if "client" in user_sessions[user_id]:
+            user_client = user_sessions[user_id]["client"]
+            args = message.text.split()
+
+            if len(args) != 2:
+                await message.reply("Zəhmət olmasa, qrupların ID-lərini düzgün formatda göndərin:\nFormat: <source_chat_id> <target_chat_id>")
+                return
+
+            source_chat_id = int(args[0])
+            target_chat_id = int(args[1])
+
+            try:
+                async for member in user_client.get_chat_members(source_chat_id):
+                    try:
+                        await user_client.add_chat_members(target_chat_id, member.user.id)
+                        await message.reply(f"İstifadəçi {member.user.id} uğurla köçürüldü!")
+                    except Exception as e:
+                        await message.reply(f"İstifadəçi {member.user.id} köçürülə bilmədi: {e}")
+            except Exception as e:
+                await message.reply(f"Qrup üzvlərini əldə etmək mümkün olmadı: {e}")
+        else:
+            await message.reply("Sessiya stringi qəbul edildikdən sonra davam edin.")
 
 bot.run()
