@@ -34,31 +34,39 @@ async def handle_message(client, message: Message):
             )
             await user_client.start()
             user_sessions[user_id]["client"] = user_client
-            await message.reply("Sessiya qəbul edildi və hesaba giriş edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
+            await message.reply("Sessiya qəbul edildi və hesaba giriş edildi! İndi daşınacaq qrupun ID-sini göndərin:")
         except Exception as e:
             await message.reply(f"Hesaba giriş uğursuz oldu: {e}")
+    elif "client" not in user_sessions[user_id]:
+        await message.reply("Zəhmət olmasa, ilk öncə sessiya stringini düzgün formatda göndərin.")
+    elif "source_chat_id" not in user_sessions[user_id]:
+        try:
+            source_chat_id = int(session_string)
+            user_sessions[user_id]["source_chat_id"] = source_chat_id
+            await message.reply("Daşınacaq qrup qəbul edildi! İndi istifadəçilərin əlavə ediləcəyi qrupun ID-sini göndərin:")
+        except ValueError:
+            await message.reply("Zəhmət olmasa, düzgün qrup ID-sini göndərin.")
     else:
-        if "client" in user_sessions[user_id]:
+        try:
+            target_chat_id = int(session_string)
+            user_sessions[user_id]["target_chat_id"] = target_chat_id
             user_client = user_sessions[user_id]["client"]
-            args = message.text.split()
+            source_chat_id = user_sessions[user_id]["source_chat_id"]
+            added_users = []
+            failed_users = []
 
-            if len(args) != 2:
-                await message.reply("Zəhmət olmasa, qrupların ID-lərini düzgün formatda göndərin:\nFormat: <source_chat_id> <target_chat_id>")
-                return
+            async for member in user_client.get_chat_members(source_chat_id):
+                try:
+                    await user_client.add_chat_members(target_chat_id, member.user.id)
+                    added_users.append(member.user.id)
+                except Exception as e:
+                    failed_users.append((member.user.id, str(e)))
 
-            source_chat_id = int(args[0])
-            target_chat_id = int(args[1])
+            result_message = f"İstifadəçilərin əlavə edilməsi tamamlandı!\n\nUğurla əlavə olunan istifadəçilər:\n{', '.join(map(str, added_users))}\n\nUğursuz olan istifadəçilər:\n"
+            result_message += "\n".join([f"{user_id}: {reason}" for user_id, reason in failed_users])
 
-            try:
-                async for member in user_client.get_chat_members(source_chat_id):
-                    try:
-                        await user_client.add_chat_members(target_chat_id, member.user.id)
-                        await message.reply(f"İstifadəçi {member.user.id} uğurla köçürüldü!")
-                    except Exception as e:
-                        await message.reply(f"İstifadəçi {member.user.id} köçürülə bilmədi: {e}")
-            except Exception as e:
-                await message.reply(f"Qrup üzvlərini əldə etmək mümkün olmadı: {e}")
-        else:
-            await message.reply("Sessiya stringi qəbul edildikdən sonra davam edin.")
+            await message.reply(result_message)
+        except ValueError:
+            await message.reply("Zəhmət olmasa, düzgün qrup ID-sini göndərin.")
 
 bot.run()
