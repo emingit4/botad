@@ -22,16 +22,16 @@ async def handle_message(client, message: Message):
     user_id = message.from_user.id
     if user_id not in user_sessions:
         # İlk dəfə məlumat göndərir, API ID-ni saxla
-        user_sessions[user_id] = {"step": "api_id", "api_id": message.text}
+        user_sessions[user_id] = {"step": "api_id", "api_id": message.text.strip()}
         await message.reply("API ID saxlanıldı! İndi API hash kodunu göndərin:")
     elif user_sessions[user_id]["step"] == "api_id":
         # API hash-ni saxla
-        user_sessions[user_id]["api_hash"] = message.text
+        user_sessions[user_id]["api_hash"] = message.text.strip()
         user_sessions[user_id]["step"] = "api_hash"
         await message.reply("API hash saxlanıldı! İndi telefon nömrənizi göndərin:")
     elif user_sessions[user_id]["step"] == "api_hash":
         # Telefon nömrəsini saxla və doğrulama kodunu göndər
-        user_sessions[user_id]["phone_number"] = message.text
+        user_sessions[user_id]["phone_number"] = message.text.strip()
         user_sessions[user_id]["step"] = "phone_number"
 
         # İstifadəçi üçün yeni Pyrogram müştərisini yarat
@@ -73,7 +73,7 @@ async def handle_message(client, message: Message):
             await user_client.sign_in(
                 phone_number=user_sessions[user_id]["phone_number"],
                 phone_code_hash=user_sessions[user_id]["phone_code_hash"],
-                phone_code=verification_code
+                code=verification_code  # Dəyişiklik burada
             )
             user_sessions[user_id]["verified"] = True
             user_sessions[user_id]["step"] = "verified"
