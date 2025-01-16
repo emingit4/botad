@@ -52,7 +52,7 @@ async def handle_message(client, message: Message):
         finally:
             await user_client.disconnect()
     elif user_sessions[user_id]["step"] == "phone_number":
-        verification_code = message.text
+        verification_code = message.text.strip()  # Kodu boşluqlardan təmizlə
         current_time = time.time()
         code_sent_time = user_sessions[user_id].get("code_sent_time")
 
