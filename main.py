@@ -3,7 +3,7 @@ from pyrogram.types import Message
 import time
 
 # Bot konfiqurasiyası
-bot_token = "7631661650:AAFyLxGS_2tTirwd8A1Jxn3QEi_FERqnREg"
+bot_token = "7631661650:AAGE9KqXFZ8WDyEJncr8J14FALQtiwanzDk"
 API_ID = "28603118"
 API_HASH = "35a400855835510c0a926f1e965aa12d"
 
