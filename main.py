@@ -1,6 +1,5 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
-import time
 
 # Bot konfiqurasiyası
 bot_token = "7631661650:AAGE9KqXFZ8WDyEJncr8J14FALQtiwanzDk"
@@ -15,7 +14,7 @@ user_sessions = {}
 
 @bot.on_message(filters.command(["start"]))
 async def start(client, message: Message):
-    await message.reply("Salam! Mənə API ID göndərin:")
+    await message.reply("Salam! Mənə session string göndərin:")
 
 @bot.on_message(filters.text & ~filters.command(["start"]))
 async def handle_message(client, message: Message):
@@ -23,92 +22,27 @@ async def handle_message(client, message: Message):
     text = message.text.strip()
     
     if user_id not in user_sessions:
-        # İlk dəfə məlumat göndərir, API ID-ni saxla
-        user_sessions[user_id] = {"step": "api_id", "api_id": text}
-        await message.reply("API ID saxlanıldı! İndi API hash kodunu göndərin:")
-    elif user_sessions[user_id]["step"] == "api_id":
-        # API hash-ni saxla
-        user_sessions[user_id]["api_hash"] = text
-        user_sessions[user_id]["step"] = "api_hash"
-        await message.reply("API hash saxlanıldı! İndi telefon nömrənizi göndərin:")
-    elif user_sessions[user_id]["step"] == "api_hash":
-        # Telefon nömrəsini saxla və doğrulama kodunu göndər
-        user_sessions[user_id]["phone_number"] = text
-        user_sessions[user_id]["step"] = "phone_number"
-
-        # İstifadəçi üçün yeni Pyrogram müştərisini yarat
-        user_client = Client(
-            f"user_{user_id}",
-            api_id=user_sessions[user_id]["api_id"],
-            api_hash=user_sessions[user_id]["api_hash"]
-        )
-
-        await user_client.connect()
+        # İstifadəçinin sessiya stringini saxla və yeni müştərini yarat
+        user_sessions[user_id] = {"session_string": text}
+        user_client = Client(text, api_id=API_ID, api_hash=API_HASH)
+        
         try:
-            response = await user_client.send_code(phone_number=user_sessions[user_id]["phone_number"])
-            user_sessions[user_id]["phone_code_hash"] = response.phone_code_hash
-            user_sessions[user_id]["code_sent_time"] = time.time()  # Kodun göndərilmə vaxtını saxla
-            await message.reply("Doğrulama kodu göndərildi! Təsdiq kodunu göndərin:")
+            await user_client.start()
+            user_sessions[user_id]["client"] = user_client
+            await message.reply("Sessiya string qəbul edildi və hesaba giriş edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
         except Exception as e:
-            await message.reply(f"Doğrulama kodunu göndərmək mümkün olmadı: {e}")
-        finally:
-            await user_client.disconnect()
-    elif user_sessions[user_id]["step"] == "phone_number":
-        verification_code = text  # Kodu boşluqlardan təmizlə
-        current_time = time.time()
-        code_sent_time = user_sessions[user_id].get("code_sent_time")
-
-        # Doğrulama kodunun süresi 2 dəqiqə (120 saniyə) olaraq təyin edilir
-        if code_sent_time and current_time - code_sent_time > 120:
-            await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən başlaya bilərsiniz.")
-            user_sessions.pop(user_id, None)  # İstifadəçi məlumatlarını sil
-            return
-
-        user_client = Client(
-            f"user_{user_id}",
-            api_id=user_sessions[user_id]["api_id"],
-            api_hash=user_sessions[user_id]["api_hash"]
-        )
-
-        await user_client.connect()
-        try:
-            await user_client.sign_in(
-                phone_number=user_sessions[user_id]["phone_number"],
-                phone_code_hash=user_sessions[user_id]["phone_code_hash"],
-                phone_code=verification_code  # Doğru parametr: phone_code
-            )
-            user_sessions[user_id]["verified"] = True
-            user_sessions[user_id]["step"] = "verified"
-            await message.reply("API məlumatlarınız təsdiq edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
-        except Exception as e:
-            if "PHONE_CODE_EXPIRED" in str(e):
-                # Doğrulama kodunun müddəti bitmişdir
-                await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən başlaya bilərsiniz.")
-                user_sessions.pop(user_id, None)
-            elif "PHONE_CODE_INVALID" in str(e):
-                # Doğrulama kodu səhvdir
-                await message.reply("Doğrulama kodu səhvdir. Yenidən cəhd edin.")
-            else:
-                await message.reply(f"Doğrulama kodu səhvdir və ya istifadə müddəti bitmişdir: {e}")
-        finally:
-            await user_client.disconnect()
-    elif user_sessions[user_id]["step"] == "verified":
-        # Qrupların ID-lərini al və istifadəçiləri köçür
+            await message.reply(f"Hesaba giriş uğursuz oldu: {e}")
+    elif "client" in user_sessions[user_id]:
+        user_client = user_sessions[user_id]["client"]
         args = text.split()
+        
         if len(args) != 2:
             await message.reply("Zəhmət olmasa, qrupların ID-lərini düzgün formatda göndərin:\nFormat: <source_chat_id> <target_chat_id>")
             return
-
+        
         source_chat_id = int(args[0])
         target_chat_id = int(args[1])
-
-        user_client = Client(
-            f"user_{user_id}",
-            api_id=user_sessions[user_id]["api_id"],
-            api_hash=user_sessions[user_id]["api_hash"]
-        )
-
-        await user_client.connect()
+        
         try:
             async for member in user_client.iter_chat_members(source_chat_id):
                 try:
@@ -118,7 +52,7 @@ async def handle_message(client, message: Message):
                     await message.reply(f"İstifadəçi {member.user.id} köçürülə bilmədi: {e}")
         except Exception as e:
             await message.reply(f"Qrup üzvlərini əldə etmək mümkün olmadı: {e}")
-        finally:
-            await user_client.disconnect()
+    else:
+        await message.reply("Sessiya stringi qəbul edildikdən sonra davam edin.")
 
 bot.run()
