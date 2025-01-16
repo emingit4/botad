@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
+import time
 
 # Bot konfiqurasiyası
 bot_token = "7631661650:AAFyLxGS_2tTirwd8A1Jxn3QEi_FERqnREg"
@@ -44,14 +45,22 @@ async def handle_message(client, message: Message):
         try:
             response = await user_client.send_code(phone_number=user_sessions[user_id]["phone_number"])
             user_sessions[user_id]["phone_code_hash"] = response.phone_code_hash
+            user_sessions[user_id]["code_sent_time"] = time.time()  # Kodun göndərilmə vaxtını saxla
             await message.reply("Doğrulama kodu göndərildi! Təsdiq kodunu göndərin:")
         except Exception as e:
             await message.reply(f"Doğrulama kodunu göndərmək mümkün olmadı: {e}")
         finally:
             await user_client.disconnect()
     elif user_sessions[user_id]["step"] == "phone_number":
-        # Doğrulama kodunu təsdiq et
         verification_code = message.text
+        current_time = time.time()
+        code_sent_time = user_sessions[user_id].get("code_sent_time")
+
+        # Doğrulama kodunun süresi 5 dəqiqə (300 saniyə) olaraq təyin edilir
+        if code_sent_time and current_time - code_sent_time > 300:
+            await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən başlaya bilərsiniz.")
+            user_sessions.pop(user_id, None)  # İstifadəçi məlumatlarını sil
+            return
 
         user_client = Client(
             f"user_{user_id}",
