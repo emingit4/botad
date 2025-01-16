@@ -20,18 +20,20 @@ async def start(client, message: Message):
 @bot.on_message(filters.text & ~filters.command(["start"]))
 async def handle_message(client, message: Message):
     user_id = message.from_user.id
+    text = message.text.strip()
+    
     if user_id not in user_sessions:
         # İlk dəfə məlumat göndərir, API ID-ni saxla
-        user_sessions[user_id] = {"step": "api_id", "api_id": message.text.strip()}
+        user_sessions[user_id] = {"step": "api_id", "api_id": text}
         await message.reply("API ID saxlanıldı! İndi API hash kodunu göndərin:")
     elif user_sessions[user_id]["step"] == "api_id":
         # API hash-ni saxla
-        user_sessions[user_id]["api_hash"] = message.text.strip()
+        user_sessions[user_id]["api_hash"] = text
         user_sessions[user_id]["step"] = "api_hash"
         await message.reply("API hash saxlanıldı! İndi telefon nömrənizi göndərin:")
     elif user_sessions[user_id]["step"] == "api_hash":
         # Telefon nömrəsini saxla və doğrulama kodunu göndər
-        user_sessions[user_id]["phone_number"] = message.text.strip()
+        user_sessions[user_id]["phone_number"] = text
         user_sessions[user_id]["step"] = "phone_number"
 
         # İstifadəçi üçün yeni Pyrogram müştərisini yarat
@@ -52,7 +54,7 @@ async def handle_message(client, message: Message):
         finally:
             await user_client.disconnect()
     elif user_sessions[user_id]["step"] == "phone_number":
-        verification_code = message.text.strip()  # Kodu boşluqlardan təmizlə
+        verification_code = text  # Kodu boşluqlardan təmizlə
         current_time = time.time()
         code_sent_time = user_sessions[user_id].get("code_sent_time")
 
@@ -79,12 +81,20 @@ async def handle_message(client, message: Message):
             user_sessions[user_id]["step"] = "verified"
             await message.reply("API məlumatlarınız təsdiq edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
         except Exception as e:
-            await message.reply(f"Doğrulama kodu səhvdir və ya istifadə müddəti bitmişdir: {e}")
+            if "PHONE_CODE_EXPIRED" in str(e):
+                await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən kod tələb edilir.")
+                # Yenidən doğrulama kodu tələb et
+                response = await user_client.send_code(phone_number=user_sessions[user_id]["phone_number"])
+                user_sessions[user_id]["phone_code_hash"] = response.phone_code_hash
+                user_sessions[user_id]["code_sent_time"] = time.time()  # Yeni kodun göndərilmə vaxtını saxla
+                await message.reply("Yeni doğrulama kodu göndərildi! Təsdiq kodunu göndərin:")
+            else:
+                await message.reply(f"Doğrulama kodu səhvdir və ya istifadə müddəti bitmişdir: {e}")
         finally:
             await user_client.disconnect()
     elif user_sessions[user_id]["step"] == "verified":
         # Qrupların ID-lərini al və istifadəçiləri köçür
-        args = message.text.split()
+        args = text.split()
         if len(args) != 2:
             await message.reply("Zəhmət olmasa, qrupların ID-lərini düzgün formatda göndərin:\nFormat: <source_chat_id> <target_chat_id>")
             return
@@ -111,4 +121,4 @@ async def handle_message(client, message: Message):
         finally:
             await user_client.disconnect()
 
-bot.run()
+bot.run() a 
