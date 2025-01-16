@@ -63,8 +63,8 @@ async def handle_message(client, message: Message):
         try:
             await user_client.sign_in(
                 phone_number=user_sessions[user_id]["phone_number"],
-                code=verification_code,
-                phone_code_hash=user_sessions[user_id]["phone_code_hash"]
+                phone_code_hash=user_sessions[user_id]["phone_code_hash"],
+                phone_code=verification_code
             )
             user_sessions[user_id]["verified"] = True
             user_sessions[user_id]["step"] = "verified"
