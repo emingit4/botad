@@ -53,31 +53,34 @@ async def handle_message(client, message: Message):
         failed_users = []
         skipped_users = []
 
-        # Source və target qrupların üzvlərini əldə et
-        source_members = await user_client.get_chat_members(source_chat_username)
-        target_members = await user_client.get_chat_members(target_chat_username)
+        try:
+            # Source və target qrupların üzvlərini əldə et
+            source_members = user_client.iter_chat_members(source_chat_username)
+            target_members = [member async for member in user_client.iter_chat_members(target_chat_username)]
 
-        # Target qrupda olan istifadəçilərin ID-lərinin siyahısını yaradın
-        target_user_ids = [member.user.id for member in target_members]
+            # Target qrupda olan istifadəçilərin ID-lərinin siyahısını yaradın
+            target_user_ids = [member.user.id for member in target_members]
 
-        async for member in source_members:
-            if member.user.id not in target_user_ids:
-                try:
-                    member_status = await user_client.get_chat_member(target_chat_username, member.user.id)
-                    if member_status.status == "restricted" or member_status.status == "left":
-                        skipped_users.append(member.user.id)
-                        continue
+            async for member in source_members:
+                if member.user.id not in target_user_ids:
+                    try:
+                        member_status = await user_client.get_chat_member(target_chat_username, member.user.id)
+                        if member_status.status == "restricted" or member_status.status == "left":
+                            skipped_users.append(member.user.id)
+                            continue
 
-                    await user_client.add_chat_members(target_chat_username, member.user.id)
-                    added_users.append(member.user.id)
-                    await asyncio.sleep(2)  # Hər əlavə əməliyyatından sonra 2 saniyə gözləyin
-                except Exception as e:
-                    failed_users.append((member.user.id, str(e)))
+                        await user_client.add_chat_members(target_chat_username, member.user.id)
+                        added_users.append(member.user.id)
+                        await asyncio.sleep(2)  # Hər əlavə əməliyyatından sonra 2 saniyə gözləyin
+                    except Exception as e:
+                        failed_users.append((member.user.id, str(e)))
 
-        result_message = f"İstifadəçilərin əlavə edilməsi tamamlandı!\n\nUğurla əlavə olunan istifadəçilər:\n{', '.join(map(str, added_users))}\n\nUğursuz olan istifadəçilər:\n"
-        result_message += "\n".join([f"{user_id}: {reason}" for user_id, reason in failed_users])
-        result_message += f"\n\nƏlavə edilmə icazəsi olmayan istifadəçilər:\n{', '.join(map(str, skipped_users))}"
+            result_message = f"İstifadəçilərin əlavə edilməsi tamamlandı!\n\nUğurla əlavə olunan istifadəçilər:\n{', '.join(map(str, added_users))}\n\nUğursuz olan istifadəçilər:\n"
+            result_message += "\n".join([f"{user_id}: {reason}" for user_id, reason in failed_users])
+            result_message += f"\n\nƏlavə edilmə icazəsi olmayan istifadəçilər:\n{', '.join(map(str, skipped_users))}"
 
-        await message.reply(result_message)
+            await message.reply(result_message)
+        except Exception as e:
+            await message.reply(f"Xəta baş verdi: {e}")
 
 bot.run()
