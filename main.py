@@ -82,7 +82,7 @@ async def handle_message(client, message: Message):
             await message.reply("API məlumatlarınız təsdiq edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
         except Exception as e:
             if "PHONE_CODE_EXPIRED" in str(e):
-                await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən kod tələb edilir.")
+                await message.reply("Doğrulama kodunun müddəti bitmişdir. Yeni kod tələb edilir.")
                 # Yenidən doğrulama kodu tələb et
                 response = await user_client.send_code(phone_number=user_sessions[user_id]["phone_number"])
                 user_sessions[user_id]["phone_code_hash"] = response.phone_code_hash
