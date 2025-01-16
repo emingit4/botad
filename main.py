@@ -19,12 +19,12 @@ async def start(client, message: Message):
 @bot.on_message(filters.text & ~filters.command(["start"]))
 async def handle_message(client, message: Message):
     user_id = message.from_user.id
-    text = message.text.strip()
+    session_string = message.text.strip()
     
     if user_id not in user_sessions:
         # İstifadəçinin sessiya stringini saxla və yeni müştərini yarat
-        user_sessions[user_id] = {"session_string": text}
-        user_client = Client(text, api_id=API_ID, api_hash=API_HASH)
+        user_sessions[user_id] = {"session_string": session_string}
+        user_client = Client(session_string, api_id=API_ID, api_hash=API_HASH)
         
         try:
             await user_client.start()
@@ -34,7 +34,7 @@ async def handle_message(client, message: Message):
             await message.reply(f"Hesaba giriş uğursuz oldu: {e}")
     elif "client" in user_sessions[user_id]:
         user_client = user_sessions[user_id]["client"]
-        args = text.split()
+        args = message.text.split()
         
         if len(args) != 2:
             await message.reply("Zəhmət olmasa, qrupların ID-lərini düzgün formatda göndərin:\nFormat: <source_chat_id> <target_chat_id>")
