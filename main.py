@@ -1,5 +1,5 @@
-from pyrogram import Client, filters
-from pyrogram.types import Message, StringSession
+from pyrogram import Client, filters, StringSession
+
 # Bot konfiqurasiyası
 bot_token = "7631661650:AAGE9KqXFZ8WDyEJncr8J14FALQtiwanzDk"
 API_ID = "28603118"
