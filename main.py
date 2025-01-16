@@ -56,8 +56,8 @@ async def handle_message(client, message: Message):
         current_time = time.time()
         code_sent_time = user_sessions[user_id].get("code_sent_time")
 
-        # Doğrulama kodunun süresi 5 dəqiqə (300 saniyə) olaraq təyin edilir
-        if code_sent_time and current_time - code_sent_time > 300:
+        # Doğrulama kodunun süresi 2 dəqiqə (120 saniyə) olaraq təyin edilir
+        if code_sent_time and current_time - code_sent_time > 120:
             await message.reply("Doğrulama kodunun müddəti bitmişdir. Yenidən başlaya bilərsiniz.")
             user_sessions.pop(user_id, None)  # İstifadəçi məlumatlarını sil
             return
