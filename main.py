@@ -1,5 +1,6 @@
 from pyrogram import Client, filters
 from pyrogram.types import Message
+from pyrogram.session import StringSession
 
 # Bot konfiqurasiyası
 bot_token = "7631661650:AAGE9KqXFZ8WDyEJncr8J14FALQtiwanzDk"
@@ -24,9 +25,8 @@ async def handle_message(client, message: Message):
     if user_id not in user_sessions:
         # İstifadəçinin sessiya stringini saxla və yeni müştərini yarat
         user_sessions[user_id] = {"session_string": session_string}
-        user_client = Client(name=user_id, session_string=session_string, api_id=API_ID, api_hash=API_HASH)
-        
         try:
+            user_client = Client(StringSession(session_string), api_id=API_ID, api_hash=API_HASH)
             await user_client.start()
             user_sessions[user_id]["client"] = user_client
             await message.reply("Sessiya string qəbul edildi və hesaba giriş edildi! İndi qrupların ID-lərini göndərin:\nFormat: <source_chat_id> <target_chat_id>")
